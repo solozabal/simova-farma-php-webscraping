@@ -23,3 +23,4 @@ yarn-error.log
 /.zed
 /database/database.sqlite
 /storage/logs/*.log
+/build/coverage
