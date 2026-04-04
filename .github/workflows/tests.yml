@@ -1,0 +1,74 @@
+name: Tests & Coverage
+
+on:
+  push:
+    branches: [ main, "copilot/**" ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    name: PHPUnit (PHP ${{ matrix.php }})
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: true
+      matrix:
+        php: [ "8.3" ]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP with Xdebug
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: pdo, pdo_sqlite, sqlite3, mbstring, xml, json, bcmath
+          coverage: xdebug
+          ini-values: xdebug.mode=coverage
+
+      - name: Validate composer.json
+        run: composer validate --no-interaction
+
+      - name: Get Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: composer-
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Copy .env for testing
+        run: cp .env.example .env
+
+      - name: Generate application key
+        run: php artisan key:generate
+
+      - name: Run tests with coverage (minimum 85%)
+        run: php artisan test --coverage --min=85
+        env:
+          XDEBUG_MODE: coverage
+
+      - name: Generate Clover XML coverage report
+        if: always()
+        run: |
+          mkdir -p build/coverage
+          XDEBUG_MODE=coverage ./vendor/bin/phpunit \
+            --coverage-clover build/coverage/clover.xml \
+            --coverage-text
+        continue-on-error: true
+
+      - name: Upload coverage artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report-php${{ matrix.php }}
+          path: build/coverage/
+          retention-days: 14
