@@ -217,6 +217,110 @@ php artisan make:filament-user
 
 ---
 
+## Testes e Cobertura de Código
+
+### Pré-requisitos para cobertura local
+
+A cobertura de código requer **Xdebug** ou **PCOV**. Escolha um:
+
+#### Xdebug (recomendado para desenvolvimento)
+```bash
+# Verificar se Xdebug está instalado
+php -m | grep xdebug
+
+# Instalar via PECL (se necessário)
+pecl install xdebug
+
+# Ou via apt (Ubuntu/Debian)
+sudo apt-get install php8.3-xdebug
+
+# Verificar configuração
+php --ri xdebug | grep -E "(mode|version)"
+```
+
+#### PCOV (mais rápido, recomendado para CI sem Xdebug)
+```bash
+pecl install pcov
+# Adicionar ao php.ini: extension=pcov.so
+```
+
+### Executar testes
+
+```bash
+# Rodar todos os testes (sem cobertura — mais rápido)
+composer test
+# ou
+php artisan test
+
+# Rodar com cobertura (requer Xdebug ou PCOV)
+# Falha se cobertura < 85%
+XDEBUG_MODE=coverage composer test:coverage
+# ou
+XDEBUG_MODE=coverage php artisan test --coverage --min=85
+
+# Rodar apenas um grupo de testes
+php artisan test --filter "MercadoPagoWebhookTest"
+php artisan test tests/Unit/Models/UserTest.php
+
+# Gerar relatório HTML de cobertura
+XDEBUG_MODE=coverage ./vendor/bin/phpunit \
+  --coverage-html build/coverage/html \
+  --coverage-clover build/coverage/clover.xml
+# Abrir: open build/coverage/html/index.html
+```
+
+### Banco de dados nos testes
+
+Os testes usam **SQLite em memória** (`:memory:`) — sem dependência de MySQL/Hostinger.  
+Configurado em `phpunit.xml` via `DB_CONNECTION=sqlite` e `DB_DATABASE=:memory:`.
+
+### Estrutura dos testes
+
+```
+tests/
+├── Unit/
+│   ├── Models/
+│   │   ├── ArticleTest.php        — makeHash, scopes, unique constraints
+│   │   ├── BlogPostTest.php       — slug generation, scopes
+│   │   ├── EditorialPostTest.php  — getMessageText, markAsSent, scopes (morning/afternoon)
+│   │   ├── SystemLogTest.php      — factory methods, scopes
+│   │   └── UserTest.php           — canReceiveTelegram, activate/cancel, scopes
+│   └── Services/
+│       ├── MercadoPagoServiceTest.php — validateWebhookSignature, getCheckoutUrl
+│       └── TelegramServiceTest.php    — sendMessage (Http::fake), formatters
+└── Feature/
+    ├── FilamentAccessTest.php           — controle de acesso ao painel admin
+    ├── FilamentResourceTest.php         — páginas de listagem/criação/edição
+    ├── JobFailedCallbackTest.php        — callbacks de falha dos jobs
+    ├── MercadoPagoWebhookTest.php       — assinatura HMAC, transições de estado, idempotência
+    ├── SendDailyDigestJobTest.php       — seleção por score, marcação de enviados
+    ├── SendEditorialPostsJobTest.php    — slots morning/afternoon, guardas de conteúdo
+    ├── SendTelegramMessageJobTest.php   — envio/falha/callback de falha
+    ├── SetTelegramWebhookCommandTest.php — registro e remoção de webhook
+    ├── SubscriptionControllerTest.php   — /assinar, /obrigado
+    └── TelegramWebhookTest.php          — /start com/sem token, já vinculado, /ajuda
+```
+
+### Critério de aceite de cobertura
+
+**Threshold: ≥ 85% de cobertura de linhas** (line coverage).  
+Configurado em `phpunit.xml` e aplicado no CI via `--min=85`.  
+Cobertura atual: **≥ 94%**.
+
+### CI/CD (GitHub Actions)
+
+O workflow `.github/workflows/tests.yml`:
+1. Instala PHP 8.3 com Xdebug
+2. Instala dependências Composer
+3. Roda `php artisan test --coverage --min=85`
+4. **Falha o CI se cobertura < 85%**
+5. Faz upload do relatório de cobertura como artefato (14 dias)
+
+> **Nota:** As credenciais de teste (TELEGRAM_BOT_TOKEN, MERCADO_PAGO_ACCESS_TOKEN, etc.)  
+> são valores fictícios definidos no `phpunit.xml`. Nunca commite valores reais no `phpunit.xml`.
+
+---
+
 ## Painel Admin (Filament)
 
 Acesse: `https://seudominio.com.br/admin`

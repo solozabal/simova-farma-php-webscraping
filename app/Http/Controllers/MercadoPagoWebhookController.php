@@ -38,7 +38,9 @@ class MercadoPagoWebhookController extends Controller
         $rawBody    = $request->getContent();
         $xSignature = $request->header('x-signature', '');
         $xRequestId = $request->header('x-request-id', '');
-        $dataId     = $request->query('data.id', '');
+        // PHP's parse_str converts dots to underscores in query param names,
+        // so ?data.id=... is accessible as data_id (not data.id).
+        $dataId     = $request->query('data_id', '');
 
         // Valida a assinatura HMAC (rejeita se inválida)
         if (! $this->mercadoPago->validateWebhookSignature($xSignature, $xRequestId, $dataId, $rawBody)) {
