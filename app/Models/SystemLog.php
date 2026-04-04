@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -19,6 +20,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class SystemLog extends Model
 {
+    /** @use HasFactory<\Database\Factories\SystemLogFactory> */
+    use HasFactory;
     // Tabela não usa updated_at
     const UPDATED_AT = null;
 

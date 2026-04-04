@@ -17,17 +17,27 @@
             <directory>app</directory>
         </include>
     </source>
+    <coverage>
+        <!-- Coverage reports: use explicit flags when running tests.
+             Example: XDEBUG_MODE=coverage php artisan test -coverage
+             Or with pcov: php -d pcov.enabled=1 artisan test -coverage -min=85 -->
+    </coverage>
     <php>
         <env name="APP_ENV" value="testing"/>
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>
         <env name="BCRYPT_ROUNDS" value="4"/>
         <env name="CACHE_STORE" value="array"/>
-        <!-- <env name="DB_CONNECTION" value="sqlite"/> -->
-        <!-- <env name="DB_DATABASE" value=":memory:"/> -->
+        <env name="DB_CONNECTION" value="sqlite"/>
+        <env name="DB_DATABASE" value=":memory:"/>
         <env name="MAIL_MAILER" value="array"/>
         <env name="PULSE_ENABLED" value="false"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SESSION_DRIVER" value="array"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
+        <env name="TELEGRAM_BOT_TOKEN" value="test-bot-token-12345"/>
+        <env name="TELEGRAM_BOT_USERNAME" value="TestSimovaBot"/>
+        <env name="MERCADO_PAGO_ACCESS_TOKEN" value="TEST-access-token"/>
+        <env name="MERCADO_PAGO_WEBHOOK_SECRET" value="test-webhook-secret"/>
+        <env name="MERCADO_PAGO_PLAN_ID" value="test-plan-id"/>
     </php>
 </phpunit>

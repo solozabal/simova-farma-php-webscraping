@@ -20,9 +20,10 @@ O **SIMOVA FARMA** é uma aplicação Laravel 11 que:
 
 - **PHP 8.3** + **Laravel 11**
 - **Filament 3.x** — painel admin/CRM
-- **MySQL** (Hostinger) em produção / SQLite em desenvolvimento
+- **MySQL** (Hostinger) em produção / SQLite em desenvolvimento e testes
 - **Fila (Queue)** com driver database para envios assíncronos
 - **Scheduler** Laravel com cron Hostinger
+- **PHPUnit 11** — suite de testes automatizados
 
 ---
 
@@ -31,7 +32,7 @@ O **SIMOVA FARMA** é uma aplicação Laravel 11 que:
 - PHP 8.3+
 - Composer 2.x
 - Node.js 20+ / npm
-- MySQL 8.x (ou SQLite para dev)
+- MySQL 8.x (ou SQLite para dev/test)
 
 ---
 
@@ -66,6 +67,88 @@ php artisan serve
 ```
 
 Acesse o painel admin em: http://localhost:8000/admin
+
+---
+
+## Testes Automatizados
+
+A suite de testes cobre os principais fluxos da aplicação usando **PHPUnit 11** com banco SQLite em memória (sem dependências externas).
+
+### Executar os testes
+
+```bash
+# Executar toda a suite
+php artisan test
+
+# Executar com saída detalhada
+php artisan test --testdox
+
+# Executar um grupo específico
+php artisan test --filter=MercadoPago
+php artisan test --filter=Telegram
+php artisan test --filter=SubscriptionController
+```
+
+### Gerar relatório de cobertura
+
+> Requer Xdebug (mode=coverage) ou pcov instalado.
+
+```bash
+# Cobertura no terminal
+XDEBUG_MODE=coverage php artisan test --coverage
+
+# Cobertura HTML (abre em browser)
+XDEBUG_MODE=coverage php artisan test --coverage-html=coverage-html
+
+# Cobertura XML (para CI)
+XDEBUG_MODE=coverage php artisan test --coverage-clover=coverage.xml
+
+# Forçar falha se cobertura < 85%
+XDEBUG_MODE=coverage php artisan test --coverage --min=85
+```
+
+Com **pcov** (mais rápido que Xdebug):
+
+```bash
+php -d pcov.enabled=1 artisan test --coverage --min=85
+```
+
+### Estrutura dos testes
+
+```
+tests/
+├── Unit/
+│   ├── ArticleModelTest.php          — casts, makeHash, scopes
+│   ├── BlogPostModelTest.php         — casts, slug, scopes
+│   ├── EditorialPostModelTest.php    — casts, getMessageText, markAsSent, scopes
+│   ├── MercadoPagoServiceTest.php    — validação HMAC, checkout URL
+│   ├── SystemLogModelTest.php        — factory methods, scopes
+│   ├── TelegramServiceTest.php       — formatação de mensagens, HTTP mock
+│   └── UserModelTest.php             — status transitions, Telegram linking, scopes
+└── Feature/
+    ├── ConsoleCommandsTest.php               — simova:daily-digest, simova:editorial-posts
+    ├── FilamentAdminTest.php                 — proteção de rotas admin
+    ├── MercadoPagoWebhookControllerTest.php  — assinatura HMAC, transições de status, idempotência
+    ├── SendDailyDigestJobTest.php            — seleção de artigos, marcação de enviados
+    ├── SendEditorialPostsJobTest.php         — posts prontos, marcação de enviados
+    ├── SubscriptionControllerTest.php        — /assinar redirect, /obrigado conteúdo
+    └── TelegramWebhookControllerTest.php     — /start linking, token inválido, persistência
+```
+
+### Ambiente de teste
+
+O arquivo `.env.testing` configura:
+- **SQLite in-memory** (sem banco externo)
+- **Tokens fake** para Telegram e Mercado Pago (sem chamadas reais)
+- **Queue síncrona** para testar jobs sem worker
+- **Mailer array** (sem envio real de e-mails)
+
+### CI/CD
+
+O GitHub Actions (`.github/workflows/tests.yml`) executa automaticamente:
+- Em todo push para `main` e branches `copilot/**`
+- Em todo Pull Request para `main`
+- Threshold de cobertura: **≥ 85%** (com pcov)
 
 ---
 
@@ -258,6 +341,7 @@ Acesse: `https://seudominio.com.br/admin`
 - ✅ Nenhum token/chave no código
 - ✅ `.env` no `.gitignore`
 - ✅ `.env.example` com placeholders comentados
+- ✅ `.env.testing` com valores fake (sem segredos reais)
 - ✅ Webhook MP valida assinatura HMAC
 - ✅ Token Telegram sem fallback hardcoded
 - ✅ Envios via fila (não síncronos)
@@ -267,3 +351,4 @@ Acesse: `https://seudominio.com.br/admin`
 ## Licença
 
 Propriedade de **SIMOVA FARMA**. Todos os direitos reservados.
+
